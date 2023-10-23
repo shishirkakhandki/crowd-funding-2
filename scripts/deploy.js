@@ -1,33 +1,28 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
-const hre = require("hardhat");
+const { ethers } = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  // Deploy Token0
+  const PB = await ethers.deployContract("PB", [10000]); // Replace with your Token0 contract's name
 
-  const lockedAmount = hre.ethers.parseEther("0.001");
+  await PB.waitForDeployment();
 
-  const lock = await hre.ethers.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
-  });
+  console.log("PB deployed to:", await PB.getAddress());
 
-  await lock.waitForDeployment();
+  // Use Token0 and Token1 addresses in AMM contract deployment
+  const pbAddress = await PB.getAddress();
 
-  console.log(
-    `Lock with ${ethers.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
-  );
+  // Deploy the AMM contract
+  const CrowdFund = await ethers.deployContract("CrowdFund", [pbAddress]); // Replace with your AMM contract's name
+  //const ammInstance = await AMMContract.deploy(token0Address, token1Address);
+
+  await CrowdFund.waitForDeployment();
+
+  console.log("CrowdFund Contract deployed to:", await CrowdFund.getAddress());
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
